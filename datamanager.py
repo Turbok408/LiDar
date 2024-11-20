@@ -1,7 +1,8 @@
 import os
 import math
 import matplotlib.pyplot as plt
-import re
+
+
 
 def converCoordinates(detectorCoords,points):
     cartCoords = [[],[]]
@@ -10,16 +11,17 @@ def converCoordinates(detectorCoords,points):
         cartCoords[0].append(math.sin(-0.418879 + 0.0523599 * i) * float(points[i])+detectorCoords[0])
     return cartCoords
 
-dirname = "C:\\Users\edwar\PycharmProjects\Lidar\.venv\data\lecturehall_08.11"
-leddar1pos = (-40,0)
-leddar2pos=(140,0)
+
+dirname = os.path.dirname(os.path.realpath(__file__))+"\\data\lecturehall_08.11"
+leddar1pos = (-40+420,0)
+leddar2pos=(140+420,0)
 
 measurements = {}
 for file in os.listdir(dirname):
     if file.endswith(".lvm"):
         print(file)
         name = ["_".join( file.split("_")[:2]),  file.split("_")[2:][0][:-4]]
-        f = open("C:\\Users\edwar\PycharmProjects\Lidar\.venv\data\lecturehall_08.11\\"+file,"r")
+        f = open(dirname+"\\"+file,"r")
         if name[1] == "leddar1":
             detecorCoords = leddar1pos
         elif name[1] == "leddar2":
@@ -30,12 +32,14 @@ for file in os.listdir(dirname):
         else:
             measurements[name[0]].update( {name[1] : points})
         f.close()
-fig, axs = plt.subplots(2, round(len(measurements.keys())/2))
-fig.tight_layout()
+fig, axs = plt.subplots(2, round(len(measurements.keys())/2),figsize=(10,10),tight_layout=True)
 for i in range(len(measurements.keys())):
     for key in measurements[list(measurements.keys())[i]]:
-        axs.flat[i].plot(measurements[list(measurements.keys())[i]][key][0],measurements[list(measurements.keys())[i]][key][1],marker="o",linestyle ="--")
+        axs.flat[i].plot(measurements[list(measurements.keys())[i]][key][0],measurements[list(measurements.keys())[i]][key][1],marker="o",linestyle ="--",label=key)
     axs.flat[i].set_title(list(measurements.keys())[i])
+    axs.flat[i].set_xlabel("x")
+    axs.flat[i].set_ylabel("y")
     axs.flat[i].set_ylim(bottom=0)
+    axs.flat[i].legend(loc="lower right")
 
 plt.show()
