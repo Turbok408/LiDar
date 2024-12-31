@@ -1,7 +1,7 @@
+import itertools
 import os
 import math
 import re
-from idlelib.iomenu import errors
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -57,31 +57,62 @@ def makeGraphs(dirname,set_name):
             person_points =[]
             for i in range(len(amplitudes)):
                 f.seek(0)
-                if float(amplitudes[i]) > 2000:
+                if float(amplitudes[i]) > 0.8*max([float(i) for i in amplitudes]) and float(amplitudes[i]) >500:
                     person_points.append(converCoordinates(detecor_coords,[f.read().split()[::2][i]],detecor_offset+i*0.0523599))
-                    if expected in personpointsdir:
-                        personpointsdir[expected][0] = personpointsdir[expected][0]+person_points[0][0][0]
-                        personpointsdir[expected][1] = personpointsdir[expected][1] + person_points[0][0][1]
-                    else:
-                        personpointsdir.update({expected:[person_points[0][0][0],person_points[0][0][1]]})
+                    if float(expected[0]) - 200 < float(person_points[0][0][0][0]) < float(expected[0]) + 200 and float(expected[1]) - 200 < float(person_points[0][0][1][0]) < float(expected[1]) + 200:
+                        if expected in personpointsdir:
+                                personpointsdir[expected][0] = personpointsdir[expected][0]+person_points[0][0][0]
+                                personpointsdir[expected][1] = personpointsdir[expected][1] + person_points[0][0][1]
+                        else:
+                            personpointsdir.update({expected:[person_points[0][0][0],person_points[0][0][1]]})
             if name[0] not in measurements.keys():
                 measurements.update({name[0]: {name[1]: points}})
             else:
                 measurements[name[0]].update({name[1]: points})
             f.close()
     errors = {}
-    person_size = (40, 10)
+    person_size = (44, 22)
     for key in personpointsdir.keys():
-        errors.update({key:{"std":[np.std(personpointsdir[key][0]),np.std(personpointsdir[key][1])],"aerr":[np.mean(np.abs(np.round(np.array(personpointsdir[key][0])-float(key[0]),))),np.mean(np.abs(np.array(personpointsdir[key][1])-float(key[1])))]}})
+        errors.update({key:{"std":[np.std(personpointsdir[key][0]),np.std(personpointsdir[key][1])],"aerr":[np.abs(np.mean(personpointsdir[key][0])-float(key[0])),np.abs(np.mean(personpointsdir[key][1])-float(key[1]))]}})
     error_std=[[],[]]
     for key in errors:
         error_std[0].append(errors[key]["aerr"][0])
         error_std[1].append(errors[key]["aerr"][1])
     error_std=np.array(error_std)
-    error_std[0][error_std[0]>person_size[0]/2] = 0
-    error_std[1][error_std[1] > person_size[1] / 2] = 0
-    print(np.std(error_std[0]),np.std( error_std[1]),np.mean(error_std[0]),np.mean(error_std[1]))
+
+    print("x std",np.std(error_std[0]),"y std",np.std( error_std[1]),"x err",np.mean(error_std[0]),"y err",np.mean(error_std[1]))
     print(dirname)
+    """
+    # PLOT ERRORS GRAPHS
+    x=[]
+    y=[]
+    n=[]
+    measurements=[]
+    for key in errors:
+        measurements.append([key[0],key[1],np.array([float(np.format_float_positional(errors[key]["aerr"][0],precision=2)),float(np.format_float_positional(errors[key]["aerr"][1], precision=2))])])
+    measurements = sorted(measurements,key=lambda x: [int(x[0]), int(x[1])])
+    for i in measurements:
+        x.append(float(i[0]))
+        y.append(float(i[1]))
+        n.append(i[2])
+    n = np.array(n)
+    fig, ax = plt.subplots()
+    colours = []
+    maxn = 0
+    for i in n:
+        if i[0]+i[1]>maxn:
+            maxn=i[0]+i[1]
+    for i in range(len(n)):
+        colours.append(((n[i][0]+n[i][1])/maxn,1-(n[i][0]+n[i][1])/maxn,0))
+    ax.scatter(x, y,s=400,color=colours)
+    fig.suptitle(set_name)
+    for i, txt in enumerate(n):
+        ax.annotate(str(txt[0]), (x[i], y[i]),ha='center',va='top')
+        ax.annotate(str(txt[1]), (x[i], y[i]), ha='center', va='bottom')
+    plt.show()
+    plt.close(fig)
+    """
+        #PLOT NORMAL GRAPHS
     measurements = list(measurements.items())
     fig, axs = plt.subplots(8, 8, figsize=(60, 80), tight_layout=True)
     measurements = sorted(measurements, key = lambda x: (-int(re.findall(r'Y(\d+)',x[0])[0]), int(re.findall(r'X(\d+)',x[0])[0])))
